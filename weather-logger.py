@@ -5,6 +5,7 @@ import sqlite3
 import subprocess
 from datetime import datetime, timedelta
 from pathlib import Path
+import csv
 
 import board
 import busio
@@ -22,6 +23,10 @@ DB_FLUSH_INTERVAL = 300         # seconds between SQLite commits
 DB_BATCH_SIZE = 5               # max samples before forced commit
 GIT_PUSH_INTERVAL_MINUTES = 30
 RETENTION_DAYS = 365
+
+CSV_EXPORT_DIR = LOG_BASE.parent / "docs" / "data"
+CSV_LAST_WEEK = CSV_EXPORT_DIR / "weather-last-week.csv"
+CSV_LAST_DAY = CSV_EXPORT_DIR / "weather-last-day.csv"
 
 # ----------------------
 # INITIALIZE SENSOR
@@ -78,9 +83,97 @@ def log_alert(message: str):
         f.write(f"{timestamp} {message}\n")
     print(f"[ALERT] {message}")
 
+def export_last_day():
+
+    CSV_EXPORT_DIR.mkdir(parents=True, exist_ok=True)
+
+    cutoff = (datetime.now() - timedelta(hours=24)).isoformat(timespec="seconds")
+
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        cursor = conn.cursor()
+
+        cursor.execute("""
+            SELECT timestamp, temp_c, temp_f, pressure_hpa, humidity
+            FROM readings
+            WHERE timestamp >= ?
+            ORDER BY timestamp ASC
+        """, (cutoff,))
+
+        rows = cursor.fetchall()
+        conn.close()
+
+        if not rows:
+            log_alert("[CSV DAY] No data found")
+            return
+
+        with open(CSV_RAW_24H, "w", newline="") as f:
+            writer = csv.writer(f)
+            writer.writerow([
+                "timestamp",
+                "temp_c",
+                "temp_f",
+                "pressure_hpa",
+                "humidity"
+            ])
+            writer.writerows(rows)
+
+        log_alert(f"[CSV DAY] Updated ({len(rows)} rows)")
+
+    except Exception as e:
+        log_alert(f"[CSV DAY ERROR] {e}")
+
+def export_last_week():
+
+    CSV_EXPORT_DIR.mkdir(parents=True, exist_ok=True)
+
+    cutoff = (datetime.now() - timedelta(days=7)).isoformat(timespec="seconds")
+
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        cursor = conn.cursor()
+
+        cursor.execute("""
+            SELECT
+                substr(timestamp, 1, 13) || ':00:00' AS hour,
+                ROUND(AVG(temp_c), 2) AS temp_c,
+                ROUND(AVG(temp_f), 2) AS temp_f,
+                ROUND(AVG(pressure_hpa), 2) AS pressure_hpa,
+                ROUND(AVG(humidity), 2) AS humidity
+            FROM readings
+            WHERE timestamp >= ?
+            GROUP BY hour
+            ORDER BY hour ASC
+        """, (cutoff,))
+
+        rows = cursor.fetchall()
+        conn.close()
+
+        if not rows:
+            log_alert("[CSV WEEKLY] No data found")
+            return
+
+        with open(CSV_HOURLY_7D, "w", newline="") as f:
+            writer = csv.writer(f)
+            writer.writerow([
+                "timestamp",
+                "temp_c",
+                "temp_f",
+                "pressure_hpa",
+                "humidity"
+            ])
+            writer.writerows(rows)
+
+        log_alert(f"[CSV WEEKLY] Updated ({len(rows)} rows)")
+
+    except Exception as e:
+        log_alert(f"[CSV WEEKLY ERROR] {e}")
 
 def push_git():
     now = datetime.now()
+    export_last_day()
+    export_last_week()
+
     if not is_online():
         log_alert("[GIT] Offline, push skipped")
         return
