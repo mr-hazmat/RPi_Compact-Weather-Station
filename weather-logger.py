@@ -107,7 +107,7 @@ def export_last_day():
             log_alert("[CSV DAY] No data found")
             return
 
-        with open(CSV_DAILY, "w", newline="") as f:
+        with open(CSV_LAST_DAY, "w", newline="") as f:
             writer = csv.writer(f)
             writer.writerow([
                 "timestamp",
@@ -153,7 +153,7 @@ def export_last_week():
             log_alert("[CSV WEEKLY] No data found")
             return
 
-        with open(CSV_WEEKLY, "w", newline="") as f:
+        with open(CSV_LAST_WEEK, "w", newline="") as f:
             writer = csv.writer(f)
             writer.writerow([
                 "timestamp",
