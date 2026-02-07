@@ -97,3 +97,5 @@
 2026-02-06T23:59:58 SQLite weather logger started
 2026-02-06T23:59:58 [DB] Old data purged
 2026-02-07T00:00:00 [DB] Old data purged
+2026-02-07T00:00:00 [DB] Old data purged
+2026-02-07T00:00:00 [CSV WEEKLY] Updated (30 rows)
