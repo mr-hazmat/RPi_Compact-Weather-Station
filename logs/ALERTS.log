@@ -215,3 +215,7 @@
 2026-02-08T07:30:00 [CSV WEEKLY] Updated (62 rows)
 2026-02-08T07:30:01 [GIT] Push successful
 2026-02-08T07:30:02 [GIT] Push successful
+2026-02-08T07:56:07 Logger stopped cleanly
+2026-02-08T07:56:10 SQLite weather logger started
+2026-02-08T07:56:10 [DB] Old data purged
+2026-02-08T08:00:00 [CSV WEEKLY] Updated (4330 rows)
