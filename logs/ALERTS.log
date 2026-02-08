@@ -174,3 +174,9 @@
 2026-02-07T16:30:02 [GIT ERROR] Command '['git', '-C', '/home/akara/GitRepos/RPi_Compact-Weather-Station', 'push']' returned non-zero exit status 1.
 2026-02-07T17:00:02 [GIT] Push successful
 2026-02-07T17:30:02 [GIT] Push successful
+2026-02-07T18:00:02 [GIT] Push successful
+2026-02-07T18:03:54 SQLite weather logger started
+2026-02-07T18:03:54 [DB] Old data purged
+2026-02-07T18:04:08 SQLite weather logger started
+2026-02-07T18:04:08 [DB] Old data purged
+2026-02-07T18:04:11 Logger stopped cleanly
