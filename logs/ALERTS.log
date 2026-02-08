@@ -219,3 +219,5 @@
 2026-02-08T07:56:10 SQLite weather logger started
 2026-02-08T07:56:10 [DB] Old data purged
 2026-02-08T08:00:00 [CSV WEEKLY] Updated (4330 rows)
+2026-02-08T08:00:01 [GIT ERROR] Command '['git', '-C', '/home/akara/GitRepos/RPi_Compact-Weather-Station', 'commit', '-m', 'Weather DB update 2026-02-08 08:00']' returned non-zero exit status 1.
+2026-02-08T08:00:02 [GIT] Push successful
