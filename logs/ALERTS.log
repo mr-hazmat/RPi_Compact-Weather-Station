@@ -206,3 +206,9 @@
 2026-02-08T05:30:02 [GIT] Push successful
 2026-02-08T06:00:02 [GIT] Push successful
 2026-02-08T06:30:01 [GIT] Push successful
+2026-02-08T07:00:01 [GIT] Push successful
+2026-02-08T07:23:09 SQLite weather logger started
+2026-02-08T07:23:09 [DB] Old data purged
+2026-02-08T07:24:15 SQLite weather logger started
+2026-02-08T07:24:15 [DB] Old data purged
+2026-02-08T07:24:16 Logger stopped cleanly
