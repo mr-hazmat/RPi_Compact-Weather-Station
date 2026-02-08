@@ -84,46 +84,6 @@ def log_alert(message: str):
         f.write(f"{timestamp} {message}\n")
     print(f"[ALERT] {message}")
 
-def export_last_day():
-
-    CSV_EXPORT_DIR.mkdir(parents=True, exist_ok=True)
-
-    cutoff = (datetime.now() - timedelta(hours=24)).isoformat(timespec="seconds")
-
-    try:
-        conn = sqlite3.connect(DB_PATH)
-        cursor = conn.cursor()
-
-        cursor.execute("""
-            SELECT timestamp, temp_c, temp_f, pressure_hpa, humidity
-            FROM readings
-            WHERE timestamp >= ?
-            ORDER BY timestamp ASC
-        """, (cutoff,))
-
-        rows = cursor.fetchall()
-        conn.close()
-
-        if not rows:
-            log_alert("[CSV DAY] No data found")
-            return
-
-        with open(CSV_LAST_DAY, "w", newline="") as f:
-            writer = csv.writer(f)
-            writer.writerow([
-                "timestamp",
-                "temp_c",
-                "temp_f",
-                "pressure_hpa",
-                "humidity"
-            ])
-            writer.writerows(rows)
-
-        log_alert(f"[CSV DAY] Updated ({len(rows)} rows)")
-
-    except Exception as e:
-        log_alert(f"[CSV DAY ERROR] {e}")
-
 def export_last_week():
 
     CSV_EXPORT_DIR.mkdir(parents=True, exist_ok=True)
@@ -136,15 +96,14 @@ def export_last_week():
 
         cursor.execute("""
             SELECT
-                substr(timestamp, 1, 13) || ':00:00' AS hour,
-                ROUND(AVG(temp_c), 2) AS temp_c,
-                ROUND(AVG(temp_f), 2) AS temp_f,
-                ROUND(AVG(pressure_hpa), 2) AS pressure_hpa,
-                ROUND(AVG(humidity), 2) AS humidity
+                timestamp,
+                temp_c,
+                temp_f,
+                pressure_hpa,
+                humidity
             FROM readings
             WHERE timestamp >= ?
-            GROUP BY hour
-            ORDER BY hour ASC
+            ORDER BY timestamp ASC
         """, (cutoff,))
 
         rows = cursor.fetchall()
