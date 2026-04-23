@@ -13,7 +13,7 @@ import adafruit_bme280.basic as bme280
 # ----------------------
 # CONFIGURATION
 # ----------------------
-BASE_DIR = Path.home() / "GitRepos" / "RPi_Compact-Weather-Station"
+BASE_DIR = Path.home() / "GitRepos" / "Pi-CWS"
 LOG_DIR = BASE_DIR / "logs"
 DB_PATH = LOG_DIR / "weather.db"
 
@@ -104,7 +104,8 @@ def export_json() -> bool:
     try:
         subprocess.run(
             [
-                "python3", str(EXPORT_SCRIPT),
+                str(BASE_DIR / ".venv" / "bin" / "python"),
+                str(EXPORT_SCRIPT),
                 "--db", str(DB_PATH),
                 "--output", str(output_path),
             ],

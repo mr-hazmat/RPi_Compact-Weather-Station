@@ -1,4 +1,27 @@
+# Virtual environment
+.venv/
+
+# Database
+logs/
+*.db
 *.db-shm
 *.db-wal
-*.db-journal
-*.py.swp
+
+# JSON export (regenerated on every push — no need to track history)
+docs/data/weather-data.json
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*.swo
