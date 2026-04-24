@@ -7,9 +7,6 @@ logs/
 *.db-shm
 *.db-wal
 
-# JSON export (regenerated on every push — no need to track history)
-docs/data/weather-data.json
-
 # Python
 __pycache__/
 *.pyc
