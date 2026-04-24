@@ -1,9 +1,6 @@
 # Virtual environment
 .venv/
 
-# Database
-logs/
-*.db
 *.db-shm
 *.db-wal
 
