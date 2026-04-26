@@ -1,0 +1,578 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Weather Logger</title>
+  <meta name="description" content="Minimal weather dashboard for Raspberry Pi logged data" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+  <style>
+    :root {
+      --bg: #fbfbf8;
+      --surface: #ffffff;
+      --text: #161616;
+      --muted: #6b7280;
+      --border: #e8e8e3;
+      --accent: #111827;
+      --shadow: 0 8px 24px rgba(0,0,0,.05);
+      --radius: 18px;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #0f1115;
+        --surface: #171a21;
+        --text: #f5f7fb;
+        --muted: #9ca3af;
+        --border: #2b313d;
+        --accent: #f3f4f6;
+        --shadow: 0 8px 24px rgba(0,0,0,.25);
+      }
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.45;
+    }
+
+    .wrap {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 32px 20px 48px;
+    }
+
+    .hero {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    .title h1 {
+      margin: 0 0 6px;
+      font-size: clamp(1.8rem, 3vw, 2.5rem);
+      font-weight: 700;
+      letter-spacing: -0.03em;
+    }
+
+    .title p, .meta {
+      margin: 0;
+      color: var(--muted);
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 14px;
+      margin: 20px 0 24px;
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+    }
+
+    .stat {
+      padding: 16px 18px;
+      min-height: 118px;
+    }
+
+    .stat .label {
+      font-size: 0.92rem;
+      color: var(--muted);
+      margin-bottom: 8px;
+    }
+
+    .stat .value {
+      font-size: clamp(1.35rem, 2.4vw, 2rem);
+      font-weight: 700;
+      letter-spacing: -0.03em;
+    }
+
+    .stat .sub {
+      margin-top: 6px;
+      color: var(--muted);
+      font-size: 0.86rem;
+    }
+
+    .panel {
+      padding: 18px;
+    }
+
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      gap: 14px;
+      margin-bottom: 16px;
+    }
+
+    .group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    button {
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--text);
+      border-radius: 999px;
+      padding: 10px 14px;
+      font: inherit;
+      cursor: pointer;
+      transition: transform .15s ease, background .15s ease, border-color .15s ease;
+    }
+
+    button:hover { transform: translateY(-1px); }
+
+    button.active {
+      background: var(--accent);
+      color: var(--bg);
+      border-color: var(--accent);
+    }
+
+    .chart-shell {
+      height: 460px;
+      position: relative;
+    }
+
+    /* Loading / error overlay */
+    .chart-shell .overlay {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1rem;
+      color: var(--muted);
+      background: var(--surface);
+      border-radius: var(--radius);
+      z-index: 10;
+    }
+
+    .chart-shell .overlay.error {
+      color: #dc2626;
+    }
+
+    .chart-shell .overlay.hidden {
+      display: none;
+    }
+
+    .stats-row {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+      margin-top: 16px;
+    }
+
+    .mini {
+      padding: 14px 16px;
+    }
+
+    .mini .label {
+      color: var(--muted);
+      font-size: 0.9rem;
+      margin-bottom: 4px;
+    }
+
+    .mini .value {
+      font-size: 1.2rem;
+      font-weight: 600;
+    }
+
+    .footer {
+      margin-top: 18px;
+      color: var(--muted);
+      font-size: 0.92rem;
+    }
+
+    @media (max-width: 880px) {
+      .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .stats-row { grid-template-columns: 1fr; }
+      .chart-shell { height: 360px; }
+    }
+
+    @media (max-width: 560px) {
+      .grid { grid-template-columns: 1fr; }
+      .wrap { padding: 22px 14px 40px; }
+      .panel { padding: 14px; }
+      button { padding: 9px 12px; }
+    }
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <section class="hero">
+      <div class="title">
+        <h1>Weather Logger</h1>
+        <p>Minimal Raspberry Pi weather dashboard</p>
+      </div>
+      <p class="meta" id="rangeText">Loading…</p>
+    </section>
+
+    <section class="grid">
+      <article class="card stat">
+        <div class="label">Latest temperature</div>
+        <div class="value" id="latestTempC">—</div>
+        <div class="sub" id="latestTempCsub">—</div>
+      </article>
+      <article class="card stat">
+        <div class="label">Latest temperature (°F)</div>
+        <div class="value" id="latestTempF">—</div>
+        <div class="sub" id="latestTempFsub">—</div>
+      </article>
+      <article class="card stat">
+        <div class="label">Latest humidity</div>
+        <div class="value" id="latestHumidity">—</div>
+        <div class="sub" id="latestHumiditySub">—</div>
+      </article>
+      <article class="card stat">
+        <div class="label">Latest pressure</div>
+        <div class="value" id="latestPressure">—</div>
+        <div class="sub" id="latestPressureSub">—</div>
+      </article>
+    </section>
+
+    <section class="card panel">
+      <div class="controls">
+        <div class="group" id="metricButtons">
+          <button class="active" data-metric="temp_c">Temperature (°C)</button>
+          <button data-metric="temp_f">Temperature (°F)</button>
+          <button data-metric="humidity">Humidity (%)</button>
+          <button data-metric="pressure_hpa">Pressure (hPa)</button>
+        </div>
+        <div class="group" id="rangeButtons">
+          <button data-range="24h">24h</button>
+          <button data-range="72h">72h</button>
+          <button class="active" data-range="all">All</button>
+        </div>
+      </div>
+
+      <div class="chart-shell">
+        <div class="overlay" id="chartOverlay">Loading data…</div>
+        <canvas id="weatherChart"></canvas>
+      </div>
+
+      <div class="stats-row">
+        <article class="card mini">
+          <div class="label">Minimum</div>
+          <div class="value" id="minValue">—</div>
+        </article>
+        <article class="card mini">
+          <div class="label">Average</div>
+          <div class="value" id="avgValue">—</div>
+        </article>
+        <article class="card mini">
+          <div class="label">Maximum</div>
+          <div class="value" id="maxValue">—</div>
+        </article>
+      </div>
+
+      <div class="footer" id="chartNote">
+        Data loaded from a static JSON export of the Raspberry Pi SQLite log.
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const METRICS = {
+      temp_c:       { label: "Temperature", unit: "°C",  decimals: 2 },
+      temp_f:       { label: "Temperature", unit: "°F",  decimals: 2 },
+      humidity:     { label: "Humidity",    unit: "%",   decimals: 2 },
+      pressure_hpa: { label: "Pressure",    unit: "hPa", decimals: 2 },
+    };
+
+    let raw        = [];   // all parsed readings
+    let activeMetric = "temp_c";
+    let activeRange  = "all";
+    let chart;
+    let validation = {};
+    let summary    = {};
+
+    // ----------------------
+    // FORMATTING
+    // ----------------------
+    function formatDate(value) {
+      return new Intl.DateTimeFormat(undefined, {
+        month: "short", day: "numeric",
+        hour: "numeric", minute: "2-digit",
+      }).format(new Date(value));
+    }
+
+    function fmt(value, decimals = 2) {
+      return Number(value).toFixed(decimals);
+    }
+
+    function fmtOrDash(value, unit, decimals = 2) {
+      return Number.isFinite(value) ? `${fmt(value, decimals)} ${unit}` : "—";
+    }
+
+    // ----------------------
+    // SAFE MIN / MAX / AVG
+    // (avoids spread-stack-overflow on large arrays)
+    // ----------------------
+    function safeMin(arr) {
+      return arr.reduce((acc, v) => (v < acc ? v : acc), arr[0]);
+    }
+    function safeMax(arr) {
+      return arr.reduce((acc, v) => (v > acc ? v : acc), arr[0]);
+    }
+    function safeAvg(arr) {
+      return arr.reduce((sum, v) => sum + v, 0) / arr.length;
+    }
+
+    // ----------------------
+    // BUTTON STATE
+    // ----------------------
+    function setActiveButton(containerId, value, attrName) {
+      document.querySelectorAll(`#${containerId} button`).forEach(btn => {
+        btn.classList.toggle("active", btn.dataset[attrName] === value);
+      });
+    }
+
+    // ----------------------
+    // RANGE SLICING
+    // Uses summary.end (from the export) as the anchor — not the last array item —
+    // so a bad final timestamp can't silently shift the window.
+    // ----------------------
+    function sliceByRange(items, range) {
+      if (range === "all") return items;
+      const anchor = summary.end ? new Date(summary.end).getTime() : Date.now();
+      const hours  = range === "24h" ? 24 : 72;
+      const cutoff = anchor - hours * 60 * 60 * 1000;
+      return items.filter(item => item.ts >= cutoff);
+    }
+
+    // ----------------------
+    // VALID VALUES
+    // ----------------------
+    function validValues(items, metric) {
+      return items.map(item => item[metric]).filter(v => Number.isFinite(v));
+    }
+
+    // ----------------------
+    // OVERLAY
+    // ----------------------
+    function showOverlay(message, isError = false) {
+      const el = document.getElementById("chartOverlay");
+      el.textContent = message;
+      el.className = "overlay" + (isError ? " error" : "");
+    }
+
+    function hideOverlay() {
+      document.getElementById("chartOverlay").className = "overlay hidden";
+    }
+
+    // ----------------------
+    // SUMMARY CARDS
+    // ----------------------
+    function updateSummary() {
+      const lc = summary.latest?.temp_c       || {};
+      const lf = summary.latest?.temp_f       || {};
+      const lh = summary.latest?.humidity     || {};
+      const lp = summary.latest?.pressure_hpa || {};
+
+      const subText = (ts) => ts ? `Valid at ${formatDate(ts)}` : "No valid value";
+
+      document.getElementById("latestTempC").textContent    = fmtOrDash(lc.value, "°C");
+      document.getElementById("latestTempCsub").textContent = subText(lc.timestamp);
+
+      document.getElementById("latestTempF").textContent    = fmtOrDash(lf.value, "°F");
+      document.getElementById("latestTempFsub").textContent = subText(lf.timestamp);
+
+      document.getElementById("latestHumidity").textContent    = fmtOrDash(lh.value, "%");
+      document.getElementById("latestHumiditySub").textContent = subText(lh.timestamp);
+
+      document.getElementById("latestPressure").textContent    = fmtOrDash(lp.value, "hPa");
+      document.getElementById("latestPressureSub").textContent = subText(lp.timestamp);
+
+      const totalRemoved = summary.validation_total_removed ?? 0;
+      document.getElementById("rangeText").textContent =
+        `${formatDate(summary.start)} — ${formatDate(summary.end)}`;
+
+      // Reuse the logged-rows card footer for suspect value count
+      document.getElementById("chartNote").textContent =
+        `${(summary.count ?? 0).toLocaleString()} total rows • ` +
+        `${totalRemoved.toLocaleString()} suspect value(s) removed during export`;
+    }
+
+    // ----------------------
+    // RANGE STATS
+    // ----------------------
+    function updateStats(items, metric) {
+      const values = validValues(items, metric);
+      const { unit, decimals } = METRICS[metric];
+
+      if (!values.length) {
+        ["minValue", "avgValue", "maxValue"].forEach(id => {
+          document.getElementById(id).textContent = "—";
+        });
+        return;
+      }
+
+      document.getElementById("minValue").textContent = `${fmt(safeMin(values), decimals)} ${unit}`;
+      document.getElementById("avgValue").textContent = `${fmt(safeAvg(values), decimals)} ${unit}`;
+      document.getElementById("maxValue").textContent = `${fmt(safeMax(values), decimals)} ${unit}`;
+    }
+
+    // ----------------------
+    // CHART
+    // ----------------------
+    function buildChart(items, metric) {
+      const dataPoints = items.map(item => ({ x: item.ts, y: item[metric] }));
+
+      const style = getComputedStyle(document.documentElement);
+      const border = style.getPropertyValue("--accent").trim();
+      const grid   = style.getPropertyValue("--border").trim();
+      const text   = style.getPropertyValue("--muted").trim();
+
+      if (chart) chart.destroy();
+
+      hideOverlay();
+
+      chart = new Chart(document.getElementById("weatherChart"), {
+        type: "line",
+        data: {
+          datasets: [{
+            label: `${METRICS[metric].label} (${METRICS[metric].unit})`,
+            data: dataPoints,
+            borderColor: border,
+            backgroundColor: border,
+            borderWidth: 1.8,
+            pointRadius: 0,
+            pointHitRadius: 8,
+            tension: 0.12,
+            spanGaps: false,
+          }],
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          interaction: { mode: "index", intersect: false },
+          parsing: false,
+          normalized: true,
+          animation: false,
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              callbacks: {
+                title: (ctx) => formatDate(ctx[0].raw.x),
+                label: (ctx) => {
+                  if (!Number.isFinite(ctx.raw.y)) return "Removed by validation";
+                  return `${METRICS[metric].label}: ${fmt(ctx.raw.y, METRICS[metric].decimals)} ${METRICS[metric].unit}`;
+                },
+              },
+            },
+            decimation: {
+              enabled: true,
+              algorithm: "lttb",
+              samples: 500,
+            },
+          },
+          scales: {
+            x: {
+              type: "linear",
+              ticks: {
+                color: text,
+                callback: (value) => formatDate(value),
+                maxTicksLimit: 8,
+              },
+              grid: { color: grid },
+            },
+            y: {
+              ticks: { color: text },
+              grid: { color: grid },
+              title: {
+                display: true,
+                text: `${METRICS[metric].label} (${METRICS[metric].unit})`,
+                color: text,
+              },
+            },
+          },
+        },
+      });
+
+      updateStats(items, metric);
+
+      const validCount   = validValues(items, metric).length;
+      const removedCount = validation[metric]?.removed ?? 0;
+      document.getElementById("chartNote").textContent =
+        `${validCount.toLocaleString()} valid points shown • ` +
+        `${removedCount.toLocaleString()} suspect ${METRICS[metric].label.toLowerCase()} value(s) removed • ` +
+        `Range: ${activeRange.toUpperCase()}`;
+    }
+
+    // ----------------------
+    // REFRESH
+    // ----------------------
+    function refresh() {
+      const filtered = sliceByRange(raw, activeRange);
+      if (!filtered.length) {
+        showOverlay("No data in the selected time range.");
+        if (chart) chart.destroy();
+        updateStats([], activeMetric);
+        return;
+      }
+      buildChart(filtered, activeMetric);
+    }
+
+    // ----------------------
+    // INIT
+    // ----------------------
+    async function init() {
+      showOverlay("Loading data…");
+      try {
+        const response = await fetch("docs/data/weather-data.json");
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const payload = await response.json();
+
+        raw = payload.readings.map(row => ({
+          ...row,
+          ts: new Date(row.timestamp).getTime(),
+        }));
+
+        validation = payload.validation || {};
+        summary    = payload.summary    || {};
+
+        if (!raw.length) throw new Error("No readings in data file.");
+
+        updateSummary();
+        refresh();
+
+        document.querySelectorAll("#metricButtons button").forEach(btn => {
+          btn.addEventListener("click", () => {
+            activeMetric = btn.dataset.metric;
+            setActiveButton("metricButtons", activeMetric, "metric");
+            refresh();
+          });
+        });
+
+        document.querySelectorAll("#rangeButtons button").forEach(btn => {
+          btn.addEventListener("click", () => {
+            activeRange = btn.dataset.range;
+            setActiveButton("rangeButtons", activeRange, "range");
+            refresh();
+          });
+        });
+
+      } catch (err) {
+        console.error(err);
+        showOverlay(`Could not load weather data: ${err.message}`, true);
+        document.getElementById("rangeText").textContent = "Data unavailable";
+      }
+    }
+
+    init();
+  </script>
+</body>
+</html>
+
