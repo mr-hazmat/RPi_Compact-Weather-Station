@@ -1505,3 +1505,12 @@
 2026-04-26T17:24:10 [INFO] Flushed 5 row(s) to DB
 2026-04-26T17:29:10 [INFO] Flushed 5 row(s) to DB
 2026-04-26T17:30:06 [INFO] JSON export written to /home/akara/GitRepos/Pi-CWS/docs/data/weather-data.json
+2026-04-26T17:30:08 [INFO] Git push successful
+2026-04-26T17:34:11 [INFO] Flushed 5 row(s) to DB
+2026-04-26T17:39:12 [INFO] Flushed 5 row(s) to DB
+2026-04-26T17:44:13 [INFO] Flushed 5 row(s) to DB
+2026-04-26T17:49:13 [INFO] Flushed 5 row(s) to DB
+2026-04-26T17:54:14 [INFO] Flushed 5 row(s) to DB
+2026-04-26T17:57:01 [INFO] SQLite weather logger started
+2026-04-26T17:57:01 [INFO] Purged readings older than 365 days
+2026-04-26T18:00:04 [INFO] JSON export written to /home/akara/GitRepos/Pi-CWS/docs/data/weather-data.json from 2026-04-01

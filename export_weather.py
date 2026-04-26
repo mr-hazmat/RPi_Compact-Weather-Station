@@ -206,8 +206,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--db",     type=Path, default=DEFAULT_DB,     help="Path to weather.db")
     parser.add_argument("--output", type=Path, default=DEFAULT_OUTPUT,  help="Path for weather-data.json")
     parser.add_argument("--days",   type=int,  default=None,           help="Export only the last N days (default: all)")
+    parser.add_argument("--from",   dest="from_date", type=str, default=None, help="Export from date onwards, format: YYYY-MM-DD")
     return parser.parse_args()
-
 
 def main() -> None:
     args = parse_args()
@@ -218,14 +218,16 @@ def main() -> None:
     args.output.parent.mkdir(parents=True, exist_ok=True)
 
     conn = sqlite3.connect(args.db)
-    if args.days is not None:
-        query = """
-            SELECT timestamp, temp_c, temp_f, pressure_hpa, humidity
-            FROM readings
-            WHERE timestamp >= datetime('now', ?)
-            ORDER BY timestamp
-        """
-        df = pd.read_sql_query(query, conn, params=(f"-{args.days} days",))
+    if args.from_date:
+        df = pd.read_sql_query(
+            "SELECT timestamp, temp_c, temp_f, pressure_hpa, humidity FROM readings WHERE timestamp >= ? ORDER BY timestamp",
+        conn, params=(args.from_date,)
+    )
+    elif args.days is not None:
+        df = pd.read_sql_query(
+            "SELECT timestamp, temp_c, temp_f, pressure_hpa, humidity FROM readings WHERE timestamp >= datetime('now', ?) ORDER BY timestamp",
+           conn, params=(f"-{args.days} days",)
+        )
     else:
         df = pd.read_sql_query(
             "SELECT timestamp, temp_c, temp_f, pressure_hpa, humidity FROM readings ORDER BY timestamp",

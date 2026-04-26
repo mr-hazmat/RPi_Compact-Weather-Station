@@ -94,13 +94,9 @@ def is_online(host: str = "github.com", port: int = 443, timeout: int = 5) -> bo
     except OSError:
         return False
 
-
 def export_json() -> bool:
-    """
-    Run export_weather.py to regenerate weather-data.json inside docs/data/.
-    Returns True on success, False on failure.
-    """
     output_path = DOCS_DATA_DIR / "weather-data.json"
+    month_start = datetime.now().replace(day=1).strftime("%Y-%m-%d")
     try:
         subprocess.run(
             [
@@ -108,17 +104,17 @@ def export_json() -> bool:
                 str(EXPORT_SCRIPT),
                 "--db", str(DB_PATH),
                 "--output", str(output_path),
+                "--from", month_start,
             ],
             check=True,
             capture_output=True,
             text=True,
         )
-        log_info(f"JSON export written to {output_path}")
+        log_info(f"JSON export written to {output_path} from {month_start}")
         return True
     except subprocess.CalledProcessError as e:
         log_alert(f"JSON export failed: {e.stderr.strip()}")
         return False
-
 
 def push_git() -> None:
     now = datetime.now()
