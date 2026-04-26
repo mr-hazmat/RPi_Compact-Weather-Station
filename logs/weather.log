@@ -1399,3 +1399,11 @@
 2026-04-26T10:52:40 [INFO] Flushed 5 row(s) to DB
 2026-04-26T10:57:41 [INFO] Flushed 5 row(s) to DB
 2026-04-26T11:00:04 [INFO] JSON export written to /home/akara/GitRepos/Pi-CWS/docs/data/weather-data.json
+2026-04-26T11:00:05 [ALERT] Git error: Command '['git', '-C', '/home/akara/GitRepos/Pi-CWS', 'push']' returned non-zero exit status 1.
+2026-04-26T11:02:42 [INFO] Flushed 5 row(s) to DB
+2026-04-26T11:07:42 [INFO] Flushed 5 row(s) to DB
+2026-04-26T11:12:43 [INFO] Flushed 5 row(s) to DB
+2026-04-26T11:17:44 [INFO] Flushed 5 row(s) to DB
+2026-04-26T11:22:45 [INFO] Flushed 5 row(s) to DB
+2026-04-26T11:27:45 [INFO] Flushed 5 row(s) to DB
+2026-04-26T11:30:03 [INFO] JSON export written to /home/akara/GitRepos/Pi-CWS/docs/data/weather-data.json
